@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Página do Professor</title>
+  </head>
+  <body>
+    <h1>Página do Professor</h1>
+    <form>
+      <input
+        type="button"
+        onclick="preencheProdutosDoBanco()"
+        name="carregar"
+        value="Carregar"
+      />
+      <br /><br />
+
+      <fieldset>
+        <input type="text" id="id" placeholder="id" /><br />
+        <input type="text" id="nome" placeholder="nome" /><br />
+        <input type="text" id="descricao" placeholder="descricao" /><br />
+        <input type="text" id="quantidade" placeholder="quantidade" /><br />
+        <input
+          type="button"
+          onclick="insereProduto()"
+          name="Enviar"
+          value="Enviar"
+        />
+      </fieldset>
+      <br /><br />
+      <table border="1">
+        <thead>
+          <th>id</th>
+          <th>nome</th>
+          <th>descrição</th>
+          <th>quantidade</th>
+          <th>ações</th>
+        </thead>
+        <tbody id="tabela-produtos"></tbody>
+      </table>
+      <div id="valor"></div>
+    </form>
+
+    <script>
+      // Função para inserir produto no banco de dados
+      function insereProduto() {
+        let id = document.getElementById("id").value;
+        let nome = document.getElementById("nome").value;
+        let descricao = document.getElementById("descricao").value;
+        let quantidade = document.getElementById("quantidade").value;
+
+        let produto = {
+          id: id,
+          nome: nome,
+          descricao: descricao,
+          quantidade: quantidade
+        };
+
+        fetch("http://localhost:8080/produto", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(produto),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            preencheProdutosDoBanco();
+          })
+          .catch((error) => console.error("Erro:", error));
+      }
+
+      // Função para preencher a tabela com os produtos do banco de dados
+      function preencheProdutosDoBanco() {
+        let tabelaProdutos = document.getElementById("tabela-produtos");
+        tabelaProdutos.innerHTML = '';
+
+        fetch("http://localhost:8080/produto")
+          .then((response) => response.json())
+          .then((data) => {
+            formataComoTabela(data);
+          })
+          .catch((error) => console.error("Erro:", error));
+      }
+
+      // Função para formatar os dados do banco em formato de tabela HTML
+      function formataComoTabela(data) {
+        let tabelaProdutos = document.getElementById("tabela-produtos");
+
+        data.forEach((produto) => {
+          let tr = document.createElement("tr");
+          
+          let tdId = document.createElement("td");
+          tdId.textContent = produto.id;
+          tr.appendChild(tdId);
+
+          let tdNome = document.createElement("td");
+          tdNome.textContent = produto.nome;
+          tr.appendChild(tdNome);
+
+          let tdDescricao = document.createElement("td");
+          tdDescricao.textContent = produto.descricao;
+          tr.appendChild(tdDescricao);
+
+          let tdQuantidade = document.createElement("td");
+          tdQuantidade.textContent = produto.quantidade;
+          tr.appendChild(tdQuantidade);
+
+          // Botão para atualizar
+          let tdAtualizar = document.createElement("td");
+          let btnAtualizar = document.createElement("button");
+          btnAtualizar.textContent = "Atualizar";
+          btnAtualizar.onclick = () => atualizarProduto(produto.id);
+          tdAtualizar.appendChild(btnAtualizar);
+          
+          // Botão para deletar
+          let tdDeletar = document.createElement("td");
+          let btnDeletar = document.createElement("button");
+          btnDeletar.textContent = "Deletar";
+          btnDeletar.onclick = () => deletarProduto(produto.id);
+          tdDeletar.appendChild(btnDeletar);
+
+          tr.appendChild(tdAtualizar);
+          tr.appendChild(tdDeletar);
+
+          tabelaProdutos.appendChild(tr);
+        });
+      }
+
+      // Função para deletar produto
+      function deletarProduto(id) {
+        fetch(`http://localhost:8080/produto/${id}`, {
+          method: "DELETE",
+        })
+          .then((response) => {
+            if (response.ok) {
+              preencheProdutosDoBanco(); // Atualiza a tabela após a exclusão
+            } else {
+              alert("Erro ao deletar o produto");
+            }
+          })
+          .catch((error) => console.error("Erro ao deletar:", error));
+      }
+
+      // Função para atualizar produto
+      function atualizarProduto(id) {
+        let nome = prompt("Digite o novo nome do produto:");
+        let descricao = prompt("Digite a nova descrição:");
+        let quantidade = prompt("Digite a nova quantidade:");
+
+        if (nome && descricao && quantidade) {
+          let produto = {
+            id: id,
+            nome: nome,
+            descricao: descricao,
+            quantidade: quantidade
+          };
+
+          fetch(`http://localhost:8080/produto/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(produto),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              preencheProdutosDoBanco(); // Atualiza a tabela após a atualização
+            })
+            .catch((error) => console.error("Erro ao atualizar:", error));
+        }
+      }
+
+      // Chama a função para carregar a lista de produtos ao carregar a página
+      window.onload = preencheProdutosDoBanco;
+    </script>
+  </body>
+</html>
